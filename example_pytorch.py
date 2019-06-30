@@ -1,9 +1,9 @@
 import torch
 
-from gpu_grabber import get_available_gpus
+from gpu_grabber import get_free_gpu_ids
 
 def get_avail_device() -> torch.device:
-    gpu_id = get_available_gpus()[0] # select the first gpu
+    gpu_id = get_free_gpu_ids()[0] # select the first gpu
     return torch.device(f"cuda:{gpu_id}")
 
 if __name__ == "__main__":
