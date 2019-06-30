@@ -72,6 +72,14 @@ def _filter_gpus(all_gpus: typing.List[dict], max_n_gpus: int, strict: bool) -> 
     return free_gpus
 
 
+def _output_gpu_info(output_fn: typing.Callable) -> None:
+    output_fn("--------------------------------Available_GPUs--------------------------------")
+    all_gpus = _get_system_gpus()
+    for gpu in all_gpus:
+        output_fn(gpu)
+    output_fn("------------------------------------------------------------------------------")
+
+
 def get_free_gpu_ids(max_n_gpus: int = None, strict: bool = True, allow_manual_override: bool = False) -> typing.List[int]:
 
     all_gpus = _get_system_gpus()
@@ -89,13 +97,9 @@ def get_all_gpu_ids() -> typing.List[int]:
     all_gpus = _get_system_gpus()
     return [gpu["id"] for gpu in all_gpus]
 
+def get_all_gpus() -> typing.List[dict]:
+    return _get_system_gpus()
 
-def _output_gpu_info(output_fn: typing.Callable) -> None:
-    output_fn("--------------------------------Available_GPUs--------------------------------")
-    all_gpus = _get_system_gpus()
-    for gpu in all_gpus:
-        output_fn(gpu)
-    output_fn("------------------------------------------------------------------------------")
 
 def print_gpu_info():
     _output_gpu_info(print)
