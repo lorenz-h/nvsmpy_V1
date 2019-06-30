@@ -2,7 +2,7 @@ import os
 
 import tensorflow as tf
 
-from gpu_grabber import get_free_gpu_ids
+from nvsmpy import get_free_gpu_ids
 
 
 if __name__ == "__main__":

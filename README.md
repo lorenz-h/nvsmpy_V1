@@ -5,7 +5,12 @@ This module makes it easy to find available gpus in a multi gpu system. It was t
 - Python >= 3.6 (Most likely backwards compatible to all versions of 3.x and if you remove f-strings and type hints)
 - [nvidia-smi](https://developer.nvidia.com/nvidia-system-management-interface) (Tested with versions 410.104 and 425.25)
 
+## Usage
+```python
+from nvsmpy import get_free_gpu_ids
 
+free_gpus = get_free_gpu_ids()
+```
 
 
 

@@ -1,6 +1,6 @@
 import torch
 
-from gpu_grabber import get_free_gpu_ids
+from nvsmpy import get_free_gpu_ids
 
 def get_avail_device() -> torch.device:
     gpu_id = get_free_gpu_ids()[0] # select the first gpu
