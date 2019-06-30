@@ -1,4 +1,4 @@
-# GPU Grabber
+# nvsmpy
 This module makes it easy to find available gpus in a multi gpu system. It was tested on Ubuntu 16.04 and Windows 10. The most common use case is machine learning on a gpu server shared among multiple users. It calls nvidia-smi in a subprocess and parses it's output to find all gpus which are currently unused. On systems that use the GPU for display output the strict parameter should be set to false. You can also allow manual overriding, should no completely unused GPUs be found.
 
 ## Requirements
