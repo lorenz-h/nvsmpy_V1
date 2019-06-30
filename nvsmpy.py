@@ -1,4 +1,10 @@
 
+
+"""
+This file contains definitions to call nvidia-smi in a subprocess, parse its output into a python readable format and filter out already used gpus
+"""
+
+
 import typing
 import subprocess
 import logging
@@ -20,7 +26,7 @@ def _ask_for_manual_gpu_override(gpus: typing.List[dict]) -> dict:
                 pass
 
         print("please select a valid id")
-        ask_for_manual_gpu_override(gpus)
+        return _ask_for_manual_gpu_override(gpus)
 
 
 def _parse_nvsmi_output(subprocess_output):
@@ -36,7 +42,7 @@ def _parse_nvsmi_output(subprocess_output):
             }
             gpus.append(new_gpu)
     except:
-        logging.exception("Could not parse subprocess output: "+str(output))
+        logging.exception("Could not parse subprocess output: "+str(subprocess_output))
         raise
 
     return gpus
@@ -71,7 +77,7 @@ def get_free_gpu_ids(max_n_gpus: int = None, strict: bool = True, allow_manual_o
     all_gpus = _get_system_gpus()
     free_gpus = _filter_gpus(all_gpus, max_n_gpus, strict)
 
-    if len(free_gpus) == 0:
+    if not free_gpus:
         print("No free GPUs found.")
         if allow_manual_override:
             free_gpus = [_ask_for_manual_gpu_override(all_gpus)]
@@ -88,20 +94,20 @@ def _output_gpu_info(output_fn: typing.Callable) -> None:
     output_fn("--------------------------------Available_GPUs--------------------------------")
     all_gpus = _get_system_gpus()
     for gpu in all_gpus:
-            output_fn(gpu)
+        output_fn(gpu)
     output_fn("------------------------------------------------------------------------------")
 
 def print_gpu_info():
     _output_gpu_info(print)
 
 def log_gpu_info(level=logging.INFO):
-    if level==logging.INFO:
+    if level == logging.INFO:
         _output_gpu_info(logging.info)
-    elif level==logging.WARNING:
+    elif level == logging.WARNING:
         _output_gpu_info(logging.warning)
-    elif level==logging.CRITICAL:
+    elif level == logging.CRITICAL:
         _output_gpu_info(logging.critical)
-    elif level==logging.DEBUG:
+    elif level == logging.DEBUG:
         _output_gpu_info(logging.debug)
     else:
         raise ValueError("Invalid logging level passed to log_gpu_info.")
