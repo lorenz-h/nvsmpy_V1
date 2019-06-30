@@ -83,11 +83,25 @@ def get_all_gpu_ids() -> typing.List[int]:
     all_gpus = _get_system_gpus()
     return [gpu["id"] for gpu in all_gpus]
 
-def print_gpu_info(use_logging=False) -> None:
+
+def _output_gpu_info(output_fn: typing.Callable) -> None:
+    output_fn("--------------------------------Available_GPUs--------------------------------")
     all_gpus = _get_system_gpus()
     for gpu in all_gpus:
-        if use_logging:
-            logging.info(gpu)
-        else:
-            print(gpu)
+            output_fn(gpu)
+    output_fn("------------------------------------------------------------------------------")
 
+def print_gpu_info():
+    _output_gpu_info(print)
+
+def log_gpu_info(level=logging.INFO):
+    if level==logging.INFO:
+        _output_gpu_info(logging.info)
+    elif level==logging.WARNING:
+        _output_gpu_info(logging.warning)
+    elif level==logging.CRITICAL:
+        _output_gpu_info(logging.critical)
+    elif level==logging.DEBUG:
+        _output_gpu_info(logging.debug)
+    else:
+        raise ValueError("Invalid logging level passed to log_gpu_info.")
