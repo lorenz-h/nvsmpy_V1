@@ -29,7 +29,7 @@ def _ask_for_manual_gpu_override(gpus: typing.List[dict]) -> dict:
         return _ask_for_manual_gpu_override(gpus)
 
 
-def _parse_nvsmi_output(subprocess_output):
+def _parse_nvsmi_output(subprocess_output: bytes) -> typing.List[dict]:
     dec_output = subprocess_output.decode("ASCII").replace(",", "").split()
     gpus = []
     try:
@@ -48,7 +48,7 @@ def _parse_nvsmi_output(subprocess_output):
     return gpus
 
 
-def _get_system_gpus():
+def _get_system_gpus() -> typing.List[dict]:
     cmd = f"nvidia-smi --query-gpu=memory.used,memory.free,utilization.gpu --format=csv,noheader,nounits"
     proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
@@ -57,7 +57,7 @@ def _get_system_gpus():
     return all_gpus
 
 
-def _filter_gpus(all_gpus: typing.List[dict], max_n_gpus: int, strict: bool) -> typing.List[dict]:
+def _filter_gpus(all_gpus: typing.List[dict], max_n_gpus: typing.Optional[int], strict: bool) -> typing.List[dict]:
     if strict:
         # use all gpus that have than 10 mb occupied and have utilization <5%
         free_gpus = [gpu for gpu in all_gpus if (gpu["mem_used"] < 10.0 and gpu["utilization"] < 5)]
@@ -104,7 +104,7 @@ def get_all_gpus() -> typing.List[dict]:
 def print_gpu_info():
     _output_gpu_info(print)
 
-def log_gpu_info(level=logging.INFO):
+def log_gpu_info(level: typing.Optional[int] = logging.INFO):
     if level == logging.INFO:
         _output_gpu_info(logging.info)
     elif level == logging.WARNING:
