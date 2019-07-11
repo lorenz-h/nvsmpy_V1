@@ -1,117 +1,97 @@
-
-
-"""
-This file contains definitions to call nvidia-smi in a subprocess, parse its output into a python readable format and filter out already used gpus
-"""
-
-
 import typing
 import subprocess
+import pathlib
+import json
 import logging
 
 
-def _ask_for_manual_gpu_override(gpus: typing.List[dict]) -> dict:
-    print("System GPUS:")
-    print(str(gpus))
-    inp = input("Select one of the above GPUs by ID or enter n to exit: ")
-    if inp == "n":
-        print("Exiting as requested by user")
-        exit()
-    else:
-        for gpu in gpus:
-            try:
-                if gpu["id"] == int(inp):
-                    return gpu
-            except ValueError:
-                pass
+def _parse_valid_queries() -> typing.Dict:
+    quote_chars = ["\'", "\""]
 
-        print("please select a valid id")
-        return _ask_for_manual_gpu_override(gpus)
-
-
-def _parse_nvsmi_output(subprocess_output: bytes) -> typing.List[dict]:
-    dec_output = subprocess_output.decode("ASCII").replace(",", "").split()
-    gpus = []
-    try:
-        for gpu_id, i in enumerate(range(0, len(dec_output), 3)):
-            new_gpu = {
-                "id": gpu_id,
-                "mem_used": float(dec_output[i]),
-                "mem_free": float(dec_output[i+1]),
-                "utilization": float(dec_output[i+2])
-            }
-            gpus.append(new_gpu)
-    except:
-        logging.exception("Could not parse subprocess output: "+str(subprocess_output))
-        raise
-
-    return gpus
-
-
-def _get_system_gpus() -> typing.List[dict]:
-    cmd = f"nvidia-smi --query-gpu=memory.used,memory.free,utilization.gpu --format=csv,noheader,nounits"
+    cmd = f"nvidia-smi --help-query-gpu"
     proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     output, _ = proc.communicate()
-    all_gpus = _parse_nvsmi_output(output)
-    return all_gpus
-
-
-def _filter_gpus(all_gpus: typing.List[dict], max_n_gpus: typing.Optional[int], strict: bool) -> typing.List[dict]:
-    if strict:
-        # use all gpus that have than 10 mb occupied and have utilization <5%
-        free_gpus = [gpu for gpu in all_gpus if (gpu["mem_used"] < 10.0 and gpu["utilization"] < 5)]
-    else:
-        # use all gpus that have more than 50% of their memory available and have utilization <50%
-        free_gpus = [gpu for gpu in all_gpus if (gpu["mem_used"]/gpu["mem_free"] < 1.0 and gpu["utilization"] < 50)]
+    dec_output = output.decode("utf-8")
+    sections = dec_output.split("\r\n\r\n")
     
-    if max_n_gpus is not None:
-        while len(free_gpus) > max_n_gpus:
-            free_gpus.pop(-1)
+    valid_queries = {}
+    for section in sections:
+        if len(section) != 0:
+            if section[0][0] in quote_chars:
+                subsections = section.split("\r\n")
+                if subsections[0][-1] in quote_chars:
+                    for qc in quote_chars:  # remove all quote chars from output
+                        subsections[0] = subsections[0].replace(qc, "")
+                    query = subsections[0].split(" or ")
+                    description = subsections[1]
 
-    return free_gpus
-
-
-def _output_gpu_info(output_fn: typing.Callable) -> None:
-    output_fn("--------------------------------Available_GPUs--------------------------------")
-    all_gpus = _get_system_gpus()
-    for gpu in all_gpus:
-        output_fn(gpu)
-    output_fn("------------------------------------------------------------------------------")
-
-
-def get_free_gpu_ids(max_n_gpus: int = None, strict: bool = True, allow_manual_override: bool = False) -> typing.List[int]:
-
-    all_gpus = _get_system_gpus()
-    free_gpus = _filter_gpus(all_gpus, max_n_gpus, strict)
-
-    if not free_gpus:
-        print("No free GPUs found.")
-        if allow_manual_override:
-            free_gpus = [_ask_for_manual_gpu_override(all_gpus)]
-
-    return [gpu["id"] for gpu in free_gpus]
+                    for synonym in query:
+                        valid_queries[synonym] = description
+    
+    return valid_queries
 
 
-def get_all_gpu_ids() -> typing.List[int]:
-    all_gpus = _get_system_gpus()
-    return [gpu["id"] for gpu in all_gpus]
-
-def get_all_gpus() -> typing.List[dict]:
-    return _get_system_gpus()
-
-
-def print_gpu_info():
-    _output_gpu_info(print)
-
-def log_gpu_info(level: typing.Optional[int] = logging.INFO):
-    if level == logging.INFO:
-        _output_gpu_info(logging.info)
-    elif level == logging.WARNING:
-        _output_gpu_info(logging.warning)
-    elif level == logging.CRITICAL:
-        _output_gpu_info(logging.critical)
-    elif level == logging.DEBUG:
-        _output_gpu_info(logging.debug)
+def _get_valid_queries():
+    valid_queries_file = pathlib.Path(__file__).parent / "valid_queries.json"
+    if not valid_queries_file.is_file():
+        logging.debug("nvsmpy parsing the valid queries directly from nvidia-smi")
+        valid_queries = _parse_valid_queries()
+        with open(valid_queries_file, "w+") as out_file:
+            logging.debug("nvsmpy saving the valid queries to json file")
+            json.dump(valid_queries, out_file)
     else:
-        raise ValueError("Invalid logging level passed to log_gpu_info.")
+        with open(valid_queries_file, "r") as conf_file:
+            logging.debug("nvsmpy loading the valid queries from json file")
+            valid_queries = json.load(conf_file)
+    globals()["VALID_QUERIES"] = set(valid_queries) 
+
+
+def get_n_system_gpus() -> int:
+    cmd = f"nvidia-smi --query-gpu=count --format=csv,noheader,nounits"
+    proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    output, _ = proc.communicate()
+    dec_output = output.decode("utf-8").replace("\n", "").replace("\r", "")
+    gpu_count = int(dec_output)
+    logging.debug(f"nvsmpy found {gpu_count} gpus in system.")
+    globals()["N_SYSTEM_GPUS"] = gpu_count
+    return gpu_count
+
+
+def _init_globals():
+    try:
+        VALID_QUERIES
+    except NameError:
+        logging.debug("nvsmpy loading valid nvidia-smi queries...")
+        _get_valid_queries()
+    try:
+        N_SYSTEM_GPUS
+    except NameError:
+        logging.debug("nvsmpy counting number of system GPUS...")
+        get_n_system_gpus()
+
+
+def query(*queries):
+    _init_globals()
+
+    for query in queries:
+        assert query in VALID_QUERIES, f"Invalid query {query} requested."
+        
+    queries_str: str = ",".join(queries)
+    
+    cmd = f"nvidia-smi --query-gpu={queries_str} --format=csv,noheader,nounits"
+    proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    output, _ = proc.communicate()
+    dec_output = output.decode("utf-8").replace(" ", "").replace("\n", "").replace("\r", "").split(",")
+    
+    assert len(dec_output) == len(queries) * N_SYSTEM_GPUS, f"Failed to parse gpu information. Size mismatch between the number of queries and number of gpus"
+    return dec_output
+
+
+def print_gpu_stats():
+    cmd = f"nvidia-smi"
+    proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    output, _ = proc.communicate()
+    dec_output = output.decode("utf-8")
+    print(dec_output)
