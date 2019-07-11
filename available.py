@@ -1,14 +1,13 @@
 from .nvsmpy import query
 
-def get_free_gpus():
+def get_free_gpus(max_util=0.1, max_mem_util=0.5):
 
     free_gpus = []
     
     gpu_utils = query("utilization.gpu")
-    mems_used = query("memory.used")
-    mems_free = query("memory.free")
+    mem_utils = query("utilization.memory")
 
     for i in range(len(gpu_utils)):
-        if float(gpu_utils[i]) < 0.1 and float(mems_used[i]) / (float(mems_free[i])+float(mems_used[i])) < 0.5:
+        if float(gpu_utils[i]) < max_util and float(mem_utils[i]) < max_mem_util:
             free_gpus.append(i)
     return free_gpus
