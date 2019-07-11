@@ -1,9 +1,9 @@
 import torch
 
-from nvsmpy import get_free_gpu_ids
+from nvsmpy.available import get_free_gpus
 
 def get_avail_device() -> torch.device:
-    gpu_id = get_free_gpu_ids()[0] # select the first gpu
+    gpu_id = get_free_gpus()[0] # select the first gpu
     return torch.device(f"cuda:{gpu_id}")
 
 if __name__ == "__main__":
