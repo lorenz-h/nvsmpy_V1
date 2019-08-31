@@ -39,7 +39,7 @@ def _get_valid_queries():
         valid_queries = _parse_valid_queries()
         with open(valid_queries_file, "w+") as out_file:
             logging.debug("nvsmpy saving the valid queries to json file")
-            json.dump(valid_queries, out_file)
+            json.dump(valid_queries, out_file, indent=4)
     else:
         with open(valid_queries_file, "r") as conf_file:
             logging.debug("nvsmpy loading the valid queries from json file")
