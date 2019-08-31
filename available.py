@@ -1,6 +1,6 @@
 from .nvsmpy import query
 
-def get_free_gpu_ids(max_util=0.1, max_mem_util=0.5):
+def get_free_gpu_ids(max_util=10, max_mem_util=50):
 
     free_gpus = []
     
