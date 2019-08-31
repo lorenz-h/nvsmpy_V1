@@ -51,8 +51,8 @@ def get_n_system_gpus() -> int:
     cmd = f"nvidia-smi --query-gpu=count --format=csv,noheader,nounits"
     proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output, _ = proc.communicate()
-    dec_output = output.decode("utf-8").replace("\n", "").replace("\r", "")
-    gpu_count = int(dec_output)
+    lines = output.decode("utf-8").splitlines()
+    gpu_count = int(lines[0])
     logging.debug(f"nvsmpy found {gpu_count} gpus in system.")
     globals()["N_SYSTEM_GPUS"] = gpu_count
     return gpu_count
@@ -83,10 +83,13 @@ def query(*queries):
     proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     output, _ = proc.communicate()
-    dec_output = output.decode("utf-8").replace(" ", "").replace("\n", "").replace("\r", "").split(",")
     
-    assert len(dec_output) == len(queries) * N_SYSTEM_GPUS, f"Failed to parse gpu information. Size mismatch between the number of queries and number of gpus"
+    dec_output = output.decode("utf-8").replace(" ", "")
+    dec_output = dec_output.splitlines()
+    
+    assert len(dec_output) == len(queries) * N_SYSTEM_GPUS, f"Failed to parse gpu information. Size mismatch between the number of queries {len(queries)} and number of gpus {N_SYSTEM_GPUS} and the output {len(dec_output)}"
     return dec_output
+    
 
 
 def print_gpu_stats():

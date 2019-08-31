@@ -1,2 +1,3 @@
 
-from .nvsmpy import *
+from .nvsmpy import query
+from .available import *
