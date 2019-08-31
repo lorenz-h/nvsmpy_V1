@@ -13,22 +13,22 @@ def _parse_valid_queries() -> typing.Dict:
 
     output, _ = proc.communicate()
     dec_output = output.decode("utf-8")
-    sections = dec_output.split("\r\n\r\n")
-    
+    sections = dec_output.splitlines()
+
     valid_queries = {}
+    query_found = False
     for section in sections:
         if len(section) != 0:
-            if section[0][0] in quote_chars:
-                subsections = section.split("\r\n")
-                if subsections[0][-1] in quote_chars:
-                    for qc in quote_chars:  # remove all quote chars from output
-                        subsections[0] = subsections[0].replace(qc, "")
-                    query = subsections[0].split(" or ")
-                    description = subsections[1]
-
-                    for synonym in query:
-                        valid_queries[synonym] = description
-    
+            if section[0] in quote_chars and section[-1] in quote_chars:
+                for qc in quote_chars:  # remove all quote chars from output
+                    section = section.replace(qc, "")
+                query = section.split(" or ")
+                # This flags that the next nonzero-length section will contain the description of the current query
+                query_found = True
+            elif query_found:
+                for synonym in query:
+                    valid_queries[synonym] = section
+                query_found = False
     return valid_queries
 
 
