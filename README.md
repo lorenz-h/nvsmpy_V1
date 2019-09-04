@@ -6,7 +6,7 @@ This module makes it easy to find available gpus in a multi gpu system. It was t
 - [nvidia-smi](https://developer.nvidia.com/nvidia-system-management-interface) (Tested with versions 410.104 and 425.25)
 
 ## Usage
-You can use nvsmpy find unoccupied GPUs in your system. What the criteria for this are defined in [available.py](available.py).
+You can use nvsmpy find unoccupied GPUs in your system. The criteria for this are defined in [available.py](available.py).
 ```python
 from nvsmpy import get_free_gpu_ids
 
